@@ -1,6 +1,7 @@
 ﻿using FitHub.Web.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using FitHub.Web; // <-- ADD THIS to ensure StorageFactory namespace is available
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,9 @@ builder.Services.AddAuthorization(o =>
 
 // MVC
 builder.Services.AddControllersWithViews();
+
+// ⭐ REGISTER StorageFactory HERE
+builder.Services.AddScoped<StorageFactory>();
 
 // Session
 builder.Services.AddDistributedMemoryCache();
@@ -49,7 +53,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession();          // <-- session before auth
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
