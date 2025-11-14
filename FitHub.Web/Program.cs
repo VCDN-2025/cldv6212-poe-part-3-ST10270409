@@ -1,30 +1,47 @@
-﻿using FitHub.Web;              // for StorageFactory
-using FitHub.Web.Services;     // for FunctionsClient
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using FitHub.Web.Data;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Services
+// DbContext
+builder.Services.AddDbContext<AppDbContext>(opts =>
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Auth
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(o =>
+    {
+        o.LoginPath = "/Account/Login";
+        o.AccessDeniedPath = "/Account/Denied";
+        o.SlidingExpiration = true;
+    });
+
+builder.Services.AddAuthorization(o =>
+{
+    o.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
+});
+
+// MVC
 builder.Services.AddControllersWithViews();
 
-// Your storage factory (reads ConnectionStrings:AzureStorage)
-builder.Services.AddSingleton<StorageFactory>();
-
-// ✅ Add a typed HttpClient to call your Azure Functions
-builder.Services.AddHttpClient<FunctionsClient>(client =>
+// Session
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
 {
-    client.Timeout = TimeSpan.FromSeconds(30);
+    options.IdleTimeout = TimeSpan.FromMinutes(20);
 });
+
+// Seeder
+builder.Services.AddSingleton<AuthSeeder>();
 
 var app = builder.Build();
 
-// Pipeline
-if (!app.Environment.IsDevelopment())
+// Seed users + products
+using (var scope = app.Services.CreateScope())
 {
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
+    var seeder = scope.ServiceProvider.GetRequiredService<AuthSeeder>();
+    seeder.EnsureUsers();
 }
 
 app.UseHttpsRedirection();
@@ -32,17 +49,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseSession();          // <-- session before auth
+app.UseAuthentication();
 app.UseAuthorization();
 
-// Optional: quick route alias for your test page
-app.MapControllerRoute(
-    name: "part2",
-    pattern: "part2/{action=Index}/{id?}",
-    defaults: new { controller = "Part2" });
-
-// Default MVC route
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapDefaultControllerRoute();
 
 app.Run();

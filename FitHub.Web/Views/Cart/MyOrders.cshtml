@@ -1,0 +1,45 @@
+﻿@model IEnumerable<FitHub.Web.Models.Order>
+
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<h2>My Orders</h2>
+
+@if (!Model.Any())
+{
+    <p>You have not placed any orders yet.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Total (R)</th>
+                <th>Items</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td>@o.OrderId</td>
+                    <td>@o.CreatedUtc.ToLocalTime()</td>
+                    <td>@o.Status</td>
+                    <td>@o.TotalAmount</td>
+                    <td>
+                        <ul class="mb-0">
+                            @foreach (var item in o.Items)
+                            {
+                                <li>@item.Product.Name x @item.Quantity (@item.UnitPrice)</li>
+                            }
+                        </ul>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

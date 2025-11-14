@@ -1,0 +1,59 @@
+﻿@model IEnumerable<FitHub.Web.Models.Order>
+
+@{
+    ViewData["Title"] = "Admin - Orders";
+}
+
+<h2>Orders</h2>
+
+@if (!Model.Any())
+{
+    <p>No orders have been placed yet.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>UserId</th>
+                <th>Status</th>
+                <th>Total (R)</th>
+                <th>Items</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td>@o.OrderId</td>
+                    <td>@o.CreatedUtc.ToLocalTime()</td>
+                    <td>@o.UserId</td>
+                    <td>@o.Status</td>
+                    <td>@o.TotalAmount</td>
+                    <td>
+                        <ul class="mb-0">
+                            @foreach (var item in o.Items)
+                            {
+                                <li>@item.Product.Name x @item.Quantity (@item.UnitPrice)</li>
+                            }
+                        </ul>
+                    </td>
+                    <td>
+                        @if (o.Status == "Pending")
+                        {
+                            <form asp-action="Process" method="post">
+                                <input type="hidden" name="id" value="@o.OrderId" />
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    Mark Processed
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
